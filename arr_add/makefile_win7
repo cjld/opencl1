@@ -1,0 +1,2 @@
+main.exe : main.cpp
+	g++ $^ -o $@ -lopencl -I"c:\Program Files (x86)\AMD APP\include" -L"c:\Program Files (x86)\AMD APP\lib\x86" -O3
