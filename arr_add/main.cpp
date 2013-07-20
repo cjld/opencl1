@@ -5,8 +5,8 @@
 #include <ctime>
 using namespace std;
 
-#define DATA_SIZE 501
-#define DID 1
+#define DATA_SIZE 2701
+#define DID 0
 
 unsigned int num;
 int err;
@@ -53,7 +53,6 @@ int main() {
  	info,
  	&infoSize);
   cout<<*((cl_device_type*)info)<<' '<<infoSize<<" "<<CL_DEVICE_TYPE_GPU<<endl;
-  //return 0;
   
   //set property with certain platform
   cl_context_properties prop[] = { CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(platforms[DID]), 0 };
@@ -98,7 +97,7 @@ int main() {
   vector<float> res(DATA_SIZE);
   err = clEnqueueReadBuffer(cqueue, cl_res, CL_TRUE, 0, sizeof(float) * DATA_SIZE, &res[0], 0, 0, 0);
   cerr<<res[work_size-1]<<endl;
-  cout<<clock()-tt<<endl;
   //for (size_t i=0;i<res.size();i++) cout<<res[i]<<endl;
+  cout<<clock()-tt<<endl;
   
 }
