@@ -88,21 +88,19 @@ int main() {
     cl::Program program(context,src);
     program.build(deviceList);
 
-    cl::Kernel kernel(program, "adder");
- 
     cl::Buffer bufferA(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
     cl::Buffer bufferB(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
     cl::Buffer bufferC(context, CL_MEM_WRITE_ONLY, LIST_SIZE * sizeof(int));
 
-    int A[LIST_SIZE];
-    for (int i=0;i<LIST_SIZE;i++) A[i]=i;
-
-    cmdQueue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
-    cmdQueue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
-
+    cl::Kernel kernel(program, "adder");
     kernel.setArg(0, bufferA);
     kernel.setArg(1, bufferB);
     kernel.setArg(2, bufferC);
+
+    int A[LIST_SIZE];
+    for (int i=0;i<LIST_SIZE;i++) A[i]=i;
+    cmdQueue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
+    cmdQueue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
 
     cmdQueue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(LIST_SIZE), cl::NDRange());
 
