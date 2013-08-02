@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define LIST_SIZE 1000
+#define LIST_SIZE 2048
 
 char* getAllFile(const char name[]) {
   ifstream fin(name,ios::binary);
@@ -52,12 +52,15 @@ void printDeviceInfo(vector<cl::Device> &list) {
     for (size_t j=0;j<sizes.size();j++)
       cout<<sizes[j]<<" ";
     cout<<endl;
- //   cout<<"max sub device : "<<CL_DEVICE_PARTITION_MAX_SUB_DEVICES<<endl;
+    cout<<"CL_DEVICE_LOCAL_MEM_SIZE : "<<list[i].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()<<endl;
+    cout<<"CL_DEVICE_MAX_WORK_GROUP_SIZE : "<<list[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()<<endl;
   }
 }
 
 int main() {
+#ifdef __CL_ENABLE_EXCEPTIONS
   try {
+#endif
     vector<cl::Platform> platformList;
     cl::Platform::get(&platformList);
     printPlatformInfo(platformList);
@@ -65,16 +68,6 @@ int main() {
     vector<cl::Device> deviceList;
     platformList[0].getDevices(CL_DEVICE_TYPE_ALL,&deviceList);
     printDeviceInfo(deviceList);
-    /*
-    {
-      cl_device_partition_property prop[]={
-        CL_DEVICE_PARTITION_BY_COUNTS,
-        3,1,
-        CL_DEVICE_PARTITION_BY_COUNTS_LIST_END,0};
-      vector<Device> subDev;
-      deviceList[0].createSubDevices(prop,&subDev);
-    }
-    */
 
     cl::Context context(deviceList);
 
@@ -82,15 +75,22 @@ int main() {
 
     cl::Program::Sources src(
         1,
-        make_pair(getAllFile("kernal1.cpp"),0)
+        make_pair(getAllFile("kernal1.cl"),0)
     );
 
     cl::Program program(context,src);
     program.build(deviceList);
 
+    string buildInfo=program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(deviceList[0]);
+    if (buildInfo.size()>1) {
+      cerr<<buildInfo<<endl;
+      return 0;
+    } else
+      cout<<"build success\n";
+
     cl::Buffer bufferA(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
     cl::Buffer bufferB(context, CL_MEM_READ_ONLY, LIST_SIZE * sizeof(int));
-    cl::Buffer bufferC(context, CL_MEM_WRITE_ONLY, LIST_SIZE * sizeof(int));
+    cl::Buffer bufferC(context, CL_MEM_READ_WRITE, LIST_SIZE * sizeof(int));
 
     cl::Kernel kernel(program, "adder");
     kernel.setArg(0, bufferA);
@@ -102,16 +102,16 @@ int main() {
     cmdQueue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
     cmdQueue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
 
-    cmdQueue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(LIST_SIZE), cl::NDRange());
+    cmdQueue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(LIST_SIZE), cl::NDRange(4));
 
     long long tt=clock();
 
       cmdQueue.enqueueReadBuffer(bufferC, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
 
-    cout<<"\nresult : "<<LIST_SIZE-1<<' '<<A[LIST_SIZE-1]<<endl;
+    cout<<"\nresult : "<<LIST_SIZE-1<<' '<<A[LIST_SIZE-1]<<' '<<A[1]<<' '<<A[2]<<endl;
     cout<<"cost time : "<<clock()-tt<<endl;
 
-  } catch (cl::Error err) {
-    cerr<<"ERROR : "<<err.what()<<'('<<err.err()<<')'<<endl;
-  }
+#ifdef __CL_ENABLE_EXCEPTIONS
+  } catch (cl::Error err) {cerr<<"ERROR : "<<err.what()<<'('<<err.err()<<')'<<endl;}
+#endif
 }
