@@ -1,6 +1,3 @@
-
-//#define USE_CL_DEVICE_FISSION 1
-
 #include <CL/cl.hpp>
 #include <vector>
 #include <iostream>
@@ -54,6 +51,8 @@ void printDeviceInfo(vector<cl::Device> &list) {
     cout<<endl;
     cout<<"CL_DEVICE_LOCAL_MEM_SIZE : "<<list[i].getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()<<endl;
     cout<<"CL_DEVICE_MAX_WORK_GROUP_SIZE : "<<list[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()<<endl;
+    cout<<"CL_DEVICE_MAX_COMPUTE_UNITS : "<<list[i].getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>()<<endl;
+    cout<<"CL_DEVICE_MAX_WORK_GROUP_SIZE : "<<list[i].getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()<<endl;
   }
 }
 
@@ -98,11 +97,10 @@ int main() {
     kernel.setArg(2, bufferC);
 
     int A[LIST_SIZE];
-    for (int i=0;i<LIST_SIZE;i++) A[i]=i;
-    cmdQueue.enqueueWriteBuffer(bufferA, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
-    cmdQueue.enqueueWriteBuffer(bufferB, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
+    for (int i=0;i<LIST_SIZE;i++) A[i]=i+1;
+    cmdQueue.enqueueWriteBuffer(bufferC, CL_TRUE, 0, LIST_SIZE * sizeof(int), A);
 
-    cmdQueue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(LIST_SIZE), cl::NDRange(4));
+    cmdQueue.enqueueNDRangeKernel(kernel, cl::NDRange(), cl::NDRange(LIST_SIZE), cl::NDRange());
 
     long long tt=clock();
 

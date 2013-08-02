@@ -1,0 +1,4 @@
+ldCLtemplate.h:4:21: fatal error: CL/cl.hpp: No such file or directory
+ #include <CL/cl.hpp>
+                     ^
+compilation terminated.

@@ -8,7 +8,7 @@ using namespace std;
 void adder(int* a,int* b,int* result,int idx)
 {
   int x=1,y=2;
-  FOR(i,1,1000000) {
+  FOR(i,1,100000) {
     x=x+y;
     y=x+y;
     x=x+y;
