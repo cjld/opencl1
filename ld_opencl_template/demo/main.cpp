@@ -10,12 +10,11 @@ int main() {
   FOR(i,0,N-1) a[i]=b[i]=i;
 
   LDCL ldcl;
-  ldcl.loadFunc("kernal.cl","adder",cl::NDRange(N));
+  ldcl.loadFunc("kernal.cl","adder",cl::NDRange(N),cl::NDRange(1024));
   ldcl.setArg(a, N*sizeof(a[0]), CL_MEM_READ_ONLY);
   ldcl.setArg(b, N*sizeof(b[0]), CL_MEM_READ_ONLY);
-  ldcl.setArg(c, N*sizeof(b[0]), CL_MEM_WRITE_ONLY, LDCL_NEED_READ);
+  ldcl.setArg(c, N*sizeof(b[0]), CL_MEM_READ_WRITE, LDCL_NEED_READ);
   long long tt=clock();
   ldcl.run();
   cout<<clock()-tt<<endl;
-  cout<<ldcl.calcUnit()<<endl;
 }

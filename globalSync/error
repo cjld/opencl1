@@ -1,0 +1,4 @@
+main.cpp:1:26: fatal error: ldCLtemplate.h: No such file or directory
+ #include <ldCLtemplate.h>
+                          ^
+compilation terminated.

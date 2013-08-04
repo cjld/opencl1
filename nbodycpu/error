@@ -1,0 +1,8 @@
+In file included from main.cpp:1:0:
+nbody.h:144:9: warning: non-static data member initializers only available with -std=c++11 or -std=gnu++11 [enabled by default]
+   int t=0;
+         ^
+main.cpp: In function 'int main()':
+main.cpp:22:11: warning: variable 'f' set but not used [-Wunused-but-set-variable]
+     Point f=tree.cal(a[i]);
+           ^

@@ -1,7 +1,7 @@
     //----------------------------------------------//
    // Sample openCL api, really super sample       //
   // Author       : CJLD                          //
- // Versions     : 1.0 beta                      //
+ // Versions     : 1.1 beta                      //
 //----------------------------------------------//
 
 #ifndef LDCL_H
@@ -206,7 +206,7 @@ struct LDCL {
     this->global=global;
     this->local=local;
     init();
-    if (funcName.size()) loadFunc(fileName,funcName);
+    if (funcName.size()) loadFunc(fileName,funcName,global,local);
   }
   ~LDCL() {releaseAll();}
 };

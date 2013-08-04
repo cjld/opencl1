@@ -1,0 +1,54 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ms/call  ms/call  name    
+ 38.89      0.07     0.07   284947     0.00     0.00  BVHTree::cal(BVHTree::Node&, Body const&)
+ 22.22      0.11     0.04        1    40.00    40.00  BVHTree::build(BVHTree::Node*&, Body*, int)
+ 22.22      0.15     0.04                             _mcount_private
+  5.56      0.16     0.01  1934154     0.00     0.00  BVHTree::cal(Point const&, float const&, float const&)
+  5.56      0.17     0.01                             _fu0___ZSt4cout
+  5.56      0.18     0.01                             main
+  0.00      0.18     0.00    30961     0.00     0.00  __gcc_deregister_frame
+
+			Call graph
+
+
+granularity: each sample hit covers 4 byte(s) for 5.56% of 0.18 seconds
+
+index % time    self  children    called     name
+                                                 <spontaneous>
+[1]     50.0    0.01    0.08                 _fu0___ZSt4cout [1]
+                0.07    0.01  284947/284947      BVHTree::cal(BVHTree::Node&, Body const&) [2]
+-----------------------------------------------
+                             1142982             BVHTree::cal(BVHTree::Node&, Body const&) [2]
+                0.07    0.01  284947/284947      _fu0___ZSt4cout [1]
+[2]     44.4    0.07    0.01  284947+1142982 BVHTree::cal(BVHTree::Node&, Body const&) [2]
+                0.01    0.00 1934154/1934154     BVHTree::cal(Point const&, float const&, float const&) [6]
+                             1142982             BVHTree::cal(BVHTree::Node&, Body const&) [2]
+-----------------------------------------------
+                                                 <spontaneous>
+[3]     27.8    0.01    0.04                 main [3]
+                0.04    0.00       1/1           BVHTree::build(BVHTree::Node*&, Body*, int) [4]
+-----------------------------------------------
+                               99330             BVHTree::build(BVHTree::Node*&, Body*, int) [4]
+                0.04    0.00       1/1           main [3]
+[4]     22.2    0.04    0.00       1+99330   BVHTree::build(BVHTree::Node*&, Body*, int) [4]
+                               99330             BVHTree::build(BVHTree::Node*&, Body*, int) [4]
+-----------------------------------------------
+                                                 <spontaneous>
+[5]     22.2    0.04    0.00                 _mcount_private [5]
+-----------------------------------------------
+                0.01    0.00 1934154/1934154     BVHTree::cal(BVHTree::Node&, Body const&) [2]
+[6]      5.6    0.01    0.00 1934154         BVHTree::cal(Point const&, float const&, float const&) [6]
+-----------------------------------------------
+                0.00    0.00       1/30961       _fu1___ZSt4cout [105]
+                0.00    0.00   30960/30961       __tcf_0 [92]
+[8]      0.0    0.00    0.00   30961         __gcc_deregister_frame [8]
+-----------------------------------------------
+
+Index by function name
+
+   [6] BVHTree::cal(Point const&, float const&, float const&) [8] __gcc_deregister_frame [3] main
+   [2] BVHTree::cal(BVHTree::Node&, Body const&) [1] _fu0___ZSt4cout
+   [4] BVHTree::build(BVHTree::Node*&, Body*, int) [5] _mcount_private
