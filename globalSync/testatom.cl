@@ -1,9 +1,9 @@
-#define FOR(i,l,r) for (int i=(l);i<=(r);i++)
+#include "../ldLIb/ldLib.cl"
 
-kernel void main(global int *a, global int *b) {
+kernel void main(global int *a, global int *b, global int *c) {
   int i=get_global_id(0);
  // i=0;
-  FOR(t,1,1000000) {
+  FOR(t,1,10000) {
     /*
     a[i]+=b[i];
     b[i]+=a[i];

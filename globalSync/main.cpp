@@ -8,13 +8,14 @@ using namespace std;
 #define LN 1024
 #define FOR(i,l,r) for (int i=(l);i<=(r);i++)
 
-int a[N],b[N];
+int a[N],b[N],c[N];
 
 int main() {
-  LDCL ldcl("kernel.cl","main",cl::NDRange(N),cl::NDRange(LN));
+  LDCL ldcl("testatom.cl","main",cl::NDRange(N),cl::NDRange(LN));
   FOR(i,0,N-1) a[i]=1;
   ldcl.setArg(a,N*sizeof(a[0]),CL_MEM_READ_WRITE,LDCL_NEED_READ);
   ldcl.setArg(b,N*sizeof(int),CL_MEM_READ_WRITE);
+  ldcl.setArg(c,N*sizeof(int),CL_MEM_READ_WRITE);
   long long tt=clock();
   ldcl.run();
   cout<<"Cost Time : "<<clock()-tt<<endl;

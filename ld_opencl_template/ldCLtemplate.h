@@ -1,13 +1,14 @@
     //----------------------------------------------//
    // Sample openCL api, really super sample       //
   // Author       : CJLD                          //
- // Versions     : 1.1 beta                      //
+ // Versions     : 2.0 beta                      //
 //----------------------------------------------//
 
 #ifndef LDCL_H
 #define LDCL_H
 
 #include <CL/cl.hpp>
+#include <CL/cl_gl.h>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -19,18 +20,7 @@ using namespace std;
 
 struct LDCL {
 
-  struct myBuffer {
-    cl::Buffer *buffer;
-    void *ptr;
-    int size;
-    cl_mem_flags flag;
-    bool needRead;
-
-    myBuffer(cl::Context *context, cl_mem_flags flags, void *p, int sz, bool nd) : ptr(p),size(sz),needRead(nd),flag(flags) {
-      buffer=new cl::Buffer(*context,flag,size);
-    }
-    ~myBuffer() {delete buffer;}
-  };
+  struct myBuffer;
 
   vector<cl::Platform>  platformList;
   vector<cl::Device>    deviceList;
@@ -44,6 +34,39 @@ struct LDCL {
 
   int pid,did;
   string fileName,funcName;
+
+  struct myBuffer {
+    cl::Buffer *buffer;
+    void *ptr;
+    int size;
+    cl_mem_flags flag;
+    bool needRead;
+    LDCL *father;
+
+    myBuffer(LDCL *fa, cl_mem_flags flags, void *p, int sz, bool nd) : ptr(p),size(sz),needRead(nd),flag(flags),father(fa) {
+      if (size) buffer=new cl::Buffer(*(fa->context),flag,size);
+    }
+    virtual ~myBuffer() {delete buffer;}
+    virtual void beforeRun() {
+      if (ptr && (flag==CL_MEM_READ_ONLY ||flag==CL_MEM_READ_WRITE))
+        father->cmdQueue->enqueueWriteBuffer(*buffer, CL_TRUE, 0, size, ptr);
+    }
+    virtual void afterRun() {
+      if (ptr && needRead)
+        father->cmdQueue->enqueueReadBuffer(*buffer, CL_TRUE, 0, size, ptr);
+    }
+  };
+
+  struct myBufferGL : public myBuffer {
+    vector<cl::Memory> mv;
+    myBufferGL(LDCL *fa, cl_mem_flags flags, GLuint bufobj) : myBuffer(fa,flags,0,0,0) {
+      buffer=new cl::BufferGL(*(fa->context),flags,bufobj);
+      mv.push_back(*buffer);
+    }
+    virtual void beforeRun() {father->cmdQueue->enqueueAcquireGLObjects(&mv);}
+    virtual void afterRun() {father->cmdQueue->enqueueReleaseGLObjects(&mv);}
+    ~myBufferGL() {}
+  };
 
   char* getAllFile(const char name[]) {
     ifstream fin(name,ios::binary);
@@ -129,6 +152,31 @@ struct LDCL {
     #endif
   }
 
+  void init(HGLRC glContext, HDC glDisplay) {
+    #ifdef __CL_ENABLE_EXCEPTIONS
+    try {
+    #endif
+
+      cl::Platform::get(&platformList);
+      printPlatformInfo();
+
+      platformList[pid].getDevices(CL_DEVICE_TYPE_ALL,&deviceList);
+      printDeviceInfo();
+
+      cl_context_properties props[]={
+        CL_GL_CONTEXT_KHR, (cl_context_properties)glContext,
+        CL_WGL_HDC_KHR, (cl_context_properties)glDisplay,
+        CL_CONTEXT_PLATFORM, (cl_context_properties)platformList[pid](), 0
+      };
+      context=new cl::Context(deviceList, props);
+
+      cmdQueue=new cl::CommandQueue(*context,deviceList[did]);
+
+    #ifdef __CL_ENABLE_EXCEPTIONS
+    } catch (cl::Error err) {cerr<<"init ERROR : "<<err.what()<<'('<<err.err()<<')'<<endl;exit(0);}
+    #endif
+  }
+
   void loadFunc(string fn, string fc, cl::NDRange global=cl::NDRange(2048), cl::NDRange local=cl::NDRange()) {
     this->global=global;
     this->local=local;
@@ -164,7 +212,19 @@ struct LDCL {
     #ifdef __CL_ENABLE_EXCEPTIONS
     try {
     #endif
-      myBuffer *newBuffer=new myBuffer(context,flags,a,size,needRead);
+      myBuffer *newBuffer=new myBuffer(this,flags,a,size,needRead);
+      bufferList.push_back(newBuffer);
+      kernel->setArg(bufferList.size()-1,*(newBuffer->buffer));
+    #ifdef __CL_ENABLE_EXCEPTIONS
+    } catch (cl::Error err) {cerr<<"setArg ERROR : "<<err.what()<<'('<<err.err()<<')'<<endl;exit(0);}
+    #endif
+  }
+
+  void setArg(GLuint obj, cl_mem_flags flags) {
+    #ifdef __CL_ENABLE_EXCEPTIONS
+    try {
+    #endif
+      myBuffer *newBuffer=new myBufferGL(this,flags,obj);
       bufferList.push_back(newBuffer);
       kernel->setArg(bufferList.size()-1,*(newBuffer->buffer));
     #ifdef __CL_ENABLE_EXCEPTIONS
@@ -179,16 +239,13 @@ struct LDCL {
     
       if (!notsync) {
         for (size_t i=0; i<bufferList.size(); i++)
-          if (bufferList[i]->ptr && (bufferList[i]->flag==CL_MEM_READ_ONLY ||
-                                     bufferList[i]->flag==CL_MEM_READ_WRITE))
-            cmdQueue->enqueueWriteBuffer(*(bufferList[i]->buffer), CL_TRUE, 0, bufferList[i]->size, bufferList[i]->ptr);
+          bufferList[i]->beforeRun();
       }
 
       cmdQueue->enqueueNDRangeKernel(*kernel, cl::NDRange(), global, local);
 
       for (size_t i=0; i<bufferList.size(); i++)
-        if (bufferList[i]->ptr && bufferList[i]->needRead)
-          cmdQueue->enqueueReadBuffer(*(bufferList[i]->buffer), CL_TRUE, 0, bufferList[i]->size, bufferList[i]->ptr);
+        bufferList[i]->afterRun();
 
     #ifdef __CL_ENABLE_EXCEPTIONS
     } catch (cl::Error err) {cerr<<"setArg ERROR : "<<err.what()<<'('<<err.err()<<')'<<endl;exit(0);}
@@ -206,6 +263,20 @@ struct LDCL {
     this->global=global;
     this->local=local;
     init();
+    if (funcName.size()) loadFunc(fileName,funcName,global,local);
+  }
+  LDCL(
+      HGLRC glContext, HDC glDisplay,
+      string _fileName=string(), string _funcName=string(), 
+      cl::NDRange global=cl::NDRange(2048), cl::NDRange local=cl::NDRange(),
+      int _pid=0, int _did=0
+    ) :
+      pid(_pid),did(_did),
+      context(0),cmdQueue(0),src(0),program(0),kernel(0),
+      fileName(_fileName),funcName(_funcName) {      
+    this->global=global;
+    this->local=local;
+    init(glContext,glDisplay);
     if (funcName.size()) loadFunc(fileName,funcName,global,local);
   }
   ~LDCL() {releaseAll();}

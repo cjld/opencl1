@@ -1,9 +1,5 @@
-#define N 2048
 #define FOR(i,l,r) for (int i=(l);i<=(r);i++)
-
-void globalSync0(volatile global int *s) {
-  barrier(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE);
-}
+#define globalSync(x) globalSync2(x)
 
 void globalSync1(volatile global int *s) {
   atomic_inc(s);
@@ -32,15 +28,4 @@ void globalSync3(volatile global int *s) {
   }
   while (!lid && s[gid]);
   barrier(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE);
-}
-
-kernel void main(volatile global int *a, global int *flags) {
-  int i=get_global_id(0);
-  
-  FOR(j,0,500000) {
-    int temp=a[i]+a[(i+1)&(N-1)]+a[(i+2)&(N-1)];
-    globalSync2(flags);
-    a[i]=temp;
-    globalSync2(flags);
-  }
 }
